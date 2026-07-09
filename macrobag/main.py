@@ -17,15 +17,26 @@ class Macrobag(BaseEstimator, ClassifierMixin):
     def fit(self, X, y, replace = False):
         # check integrity of sklearn standards
         X, y = check_X_y(X, y)
+
+        # extract the classes out of the training set.
+        classes, counts = np.unique(y, return_counts=True)
+        if len(classes) < 2:
+           raise ValueError("Macrobag needs two classes. Please your trainingset!")
+        if len(classes) > 2:
+           raise ValueError("Macrobag currently supports binary classification only!")
+
+        minority_class = classes[np.argmin(counts)]
+        majority_class = classes[np.argmax(counts)]
+
         self.classes_ = np.unique(y)
         
         # Split the data in the rare (positive) and abundant (negative) class 
-        pos_idx = np.where(y == 1)[0]
-        neg_idx = np.where(y == 0)[0]
+        min_idx = np.where(y == minority_class)[0]
+        maj_idx = np.where(y == majority_class)[0]
         
-        n_pos = len(pos_idx)
+        n_min = len(min_idx)
         
-        if n_pos == 0:
+        if n_min == 0:
             raise ValueError("no positive class available in dataset.")
             
         self.estimators_ = []
@@ -33,10 +44,10 @@ class Macrobag(BaseEstimator, ClassifierMixin):
         # The Macro-Bagging loop
         rng = np.random.RandomState(self.random_state)
         for i in range(self.n_bootstrap):
-            chosen_neg_idx = rng.choice(neg_idx, size=n_pos, replace=replace)
+            chosen_maj_idx = rng.choice(maj_idx, size=n_min, replace=replace)
             
             # combine into perfect balanced  50/50 subset
-            subset_idx = np.concatenate([pos_idx, chosen_neg_idx])
+            subset_idx = np.concatenate([min_idx, chosen_maj_idx])
             X_subset = X[subset_idx]
             y_subset = y[subset_idx]
             
