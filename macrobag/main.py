@@ -7,12 +7,13 @@ class Macrobag(BaseEstimator, ClassifierMixin):
     """
     Macrobag: A resampling learning technique for rare event training.
     """
-    def __init__(self, base_estimator, n_bootstrap=100, threshold = 0.5, random_state = 42, predict_proba_if_present = True):
+    def __init__(self, base_estimator, n_bootstrap=100, threshold = 0.5, maj_multiplier = 1, random_state = 42, predict_proba_if_present = True):
         self.base_estimator = base_estimator
         self.n_bootstrap = n_bootstrap
         self.threshold = threshold
         self.random_state = random_state
         self.predict_proba_if_present = predict_proba_if_present
+        self.maj_multiplier = maj_multiplier
         
     def fit(self, X, y, replace = False):
         # check integrity of sklearn standards
@@ -44,7 +45,7 @@ class Macrobag(BaseEstimator, ClassifierMixin):
         # The Macro-Bagging loop
         rng = np.random.RandomState(self.random_state)
         for i in range(self.n_bootstrap):
-            chosen_maj_idx = rng.choice(maj_idx, size=n_min, replace=replace)
+            chosen_maj_idx = rng.choice(maj_idx, size=n_min*self.maj_multiplier, replace=replace)
             
             # combine into perfect balanced  50/50 subset
             subset_idx = np.concatenate([min_idx, chosen_maj_idx])
@@ -60,7 +61,7 @@ class Macrobag(BaseEstimator, ClassifierMixin):
             
         return self
         
-    def predict_proba(self, X):
+    def predict_proba(self, X): # to do: make sure that the predict and predict_proba give the right output format. 
 	# check if the model is already a fitted model
         check_is_fitted(self, ['estimators_', 'classes_'])
         X = check_array(X)
@@ -80,4 +81,10 @@ class Macrobag(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         probas = self.predict_proba(X)[:, 1]
         return (probas >= self.threshold).astype(int)
+    
+    def performance(self, scores, X, y):
+        predictions = [clf.predict(X) for clf in self.estimators_]
+        scores = {score.__name__: [score(y, y_) for y_ in predictions] for score in scores}
+        return scores
+        
   
