@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macrobag"
+version = "0.1.0"
+description = "A resampling learning technique for rare event situations"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENCE" }
+authors = [
+    { name = "Marco Puts" }
+]
+dependencies = [
+    "numpy>=1.23",
+    "scikit-learn>=1.5"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["macrobag*"]
